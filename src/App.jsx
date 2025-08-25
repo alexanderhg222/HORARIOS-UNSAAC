@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import html2canvas from 'html2canvas';
+import { buildApiUrl, API_ENDPOINTS } from './config';
 
 
 function App() {
@@ -145,7 +146,7 @@ function App() {
 
   useEffect(() => {
     setLoading(true);
-    fetch('http://localhost:5000/api/carreras')
+    fetch(buildApiUrl(API_ENDPOINTS.carreras))
       .then(res => res.json())
       .then(data => {
         setCarreras(data);
@@ -162,7 +163,7 @@ function App() {
       return;
     }
     setLoadingCursos(true);
-    fetch(`http://localhost:5000/api/cursos?link=${encodeURIComponent(carrera)}`)
+    fetch(buildApiUrl(API_ENDPOINTS.cursos, { link: carrera }))
       .then(res => res.json())
       .then(data => {
         setCursos(data);
@@ -240,7 +241,7 @@ function App() {
             let resultadosTotales = [];
             for (let curso of cursos) {
               try {
-                const res = await fetch(`http://localhost:5000/api/alumnos?curso=${encodeURIComponent(curso)}&filtro=${encodeURIComponent(filtro)}`);
+                const res = await fetch(buildApiUrl(API_ENDPOINTS.alumnos, { curso, filtro }));
                 const data = await res.json();
              
                 if (Array.isArray(data)) {
@@ -307,7 +308,7 @@ function App() {
                 return;
               }
               try {
-                const res = await fetch(`http://localhost:5000/api/horarios?link=${encodeURIComponent(carrera)}&codigos=${encodeURIComponent(codigos)}`);
+                const res = await fetch(buildApiUrl(API_ENDPOINTS.horarios, { link: carrera, codigos }));
                 const data = await res.json();
                 setHorarios(data);
                 setShowHorarioModal(true);

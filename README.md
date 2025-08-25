@@ -117,15 +117,33 @@ python app.py
 ## 🔧 Configuración del Entorno
 
 ### Variables de Entorno
-Crear archivo `.env` en el directorio raíz:
+
+#### Backend (Flask)
+Crear archivo `.env` en el directorio `backend/`:
 ```env
 FLASK_ENV=development
 FLASK_DEBUG=True
 PORT=5000
 ```
 
+#### Frontend (React)
+Para producción, configurar en Netlify:
+- Ve a **Site settings** → **Environment variables**
+- Agrega: `VITE_API_URL` = `https://migrada-backend.onrender.com`
+
+Para desarrollo local, crear archivo `.env` en el directorio raíz:
+```env
+VITE_API_URL=https://migrada-backend.onrender.com
+```
+
 ### Configuración de CORS
-El backend está configurado para permitir peticiones desde el frontend en desarrollo.
+El backend está configurado para permitir peticiones desde cualquier origen (CORS habilitado).
+
+### Backend Desplegado
+El backend está configurado para usar la URL de producción por defecto:
+- **URL de Producción**: `https://migrada-backend.onrender.com`
+- **Health Check**: `/health`
+- **Endpoints disponibles**: `/api/carreras`, `/api/cursos`, `/api/alumnos`, `/api/horarios`
 
 ## 📱 Uso del Sistema
 
