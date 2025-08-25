@@ -17,41 +17,115 @@ def health():
 # Endpoint para obtener carreras
 @app.route('/api/carreras', methods=['GET'])
 def get_carreras():
-    url = "http://ccomputo.unsaac.edu.pe/index.php?op=catalog"
-    response = requests.get(url)
-    response.encoding = "latin-1"
-    soup = BeautifulSoup(response.text, "html.parser")
-    tabla = soup.find("table")
-    carreras = []
-    if tabla:
-        for row in tabla.find_all("tr")[1:]:
-            cols = row.find_all("td")
-            if len(cols) >= 2:
-                nombre = cols[1].get_text(strip=True)
-                link_tag = cols[2].find("a")
-                if link_tag and link_tag.has_attr("href"):
-                    link = link_tag["href"]
-                    if not link.startswith("http"):
-                        link = "http://ccomputo.unsaac.edu.pe/" + link
-                    carreras.append({"nombre": nombre, "link": link})
-    return jsonify(carreras)
+    try:
+        url = "http://ccomputo.unsaac.edu.pe/index.php?op=catalog"
+        print(f"[GET CARRERAS] Consultando: {url}")
+        
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        
+        print(f"[GET CARRERAS] Status code: {response.status_code}")
+        print(f"[GET CARRERAS] Content length: {len(response.text)}")
+        
+        response.encoding = "latin-1"
+        soup = BeautifulSoup(response.text, "html.parser")
+        tabla = soup.find("table")
+        
+        carreras = []
+        if tabla:
+            rows = tabla.find_all("tr")[1:]  # Saltar el header
+            print(f"[GET CARRERAS] Filas encontradas: {len(rows)}")
+            
+            for i, row in enumerate(rows):
+                try:
+                    cols = row.find_all("td")
+                    if len(cols) >= 2:
+                        nombre = cols[1].get_text(strip=True)
+                        link_tag = cols[2].find("a")
+                        if link_tag and link_tag.has_attr("href"):
+                            link = link_tag["href"]
+                            if not link.startswith("http"):
+                                link = "http://ccomputo.unsaac.edu.pe/" + link
+                            carreras.append({"nombre": nombre, "link": link})
+                            print(f"[GET CARRERAS] Carrera {i+1}: {nombre} -> {link}")
+                except Exception as e:
+                    print(f"[GET CARRERAS] Error procesando fila {i+1}: {str(e)}")
+                    continue
+        else:
+            print("[GET CARRERAS] No se encontró tabla")
+            
+        print(f"[GET CARRERAS] Total de carreras: {len(carreras)}")
+        return jsonify(carreras)
+        
+    except requests.exceptions.RequestException as e:
+        print(f"[GET CARRERAS] Error de requests: {str(e)}")
+        return jsonify({"error": f"Error al hacer request: {str(e)}"}), 500
+    except Exception as e:
+        print(f"[GET CARRERAS] Error general: {str(e)}")
+        return jsonify({"error": f"Error interno: {str(e)}"}), 500
 
 # Endpoint para obtener cursos de una carrera (por link)
 @app.route('/api/cursos', methods=['GET'])
 def get_cursos():
-    link = request.args.get('link')
-    if not link:
-        return jsonify([])
-    response = requests.get(link)
-    response.encoding = "latin-1"
-    soup = BeautifulSoup(response.text, "html.parser")
-    tabla = soup.find("table")
-    cursos = []
-    if tabla:
-        df = pd.read_html(StringIO(str(tabla)), header=0)[0]
-        if "CURSO" in df.columns:
-            cursos = df["CURSO"].dropna().unique().tolist()
-    return jsonify(cursos)
+    try:
+        link = request.args.get('link')
+        if not link:
+            return jsonify({"error": "Link no proporcionado"}), 400
+        
+        print(f"[GET CURSOS] Procesando link: {link}")
+        
+        # Decodificar la URL si viene codificada
+        import urllib.parse
+        decoded_link = urllib.parse.unquote(link)
+        print(f"[GET CURSOS] Link decodificado: {decoded_link}")
+        
+        response = requests.get(decoded_link, timeout=30)
+        response.raise_for_status()  # Lanzar error si la respuesta no es exitosa
+        
+        print(f"[GET CURSOS] Status code: {response.status_code}")
+        print(f"[GET CURSOS] Content length: {len(response.text)}")
+        
+        response.encoding = "latin-1"
+        soup = BeautifulSoup(response.text, "html.parser")
+        
+        # Buscar todas las tablas
+        tablas = soup.find_all("table")
+        print(f"[GET CURSOS] Tablas encontradas: {len(tablas)}")
+        
+        cursos = []
+        for i, tabla in enumerate(tablas):
+            try:
+                print(f"[GET CURSOS] Procesando tabla {i+1}")
+                df = pd.read_html(StringIO(str(tabla)), header=0)[0]
+                print(f"[GET CURSOS] Columnas de tabla {i+1}: {df.columns.tolist()}")
+                
+                # Buscar columna de cursos
+                if "CURSO" in df.columns:
+                    cursos_encontrados = df["CURSO"].dropna().unique().tolist()
+                    print(f"[GET CURSOS] Cursos encontrados en tabla {i+1}: {cursos_encontrados}")
+                    cursos.extend(cursos_encontrados)
+                elif "CODIGO" in df.columns:
+                    cursos_encontrados = df["CODIGO"].dropna().unique().tolist()
+                    print(f"[GET CURSOS] Códigos encontrados en tabla {i+1}: {cursos_encontrados}")
+                    cursos.extend(cursos_encontrados)
+                    
+            except Exception as e:
+                print(f"[GET CURSOS] Error procesando tabla {i+1}: {str(e)}")
+                continue
+        
+        # Eliminar duplicados y valores vacíos
+        cursos = list(set([str(curso).strip() for curso in cursos if str(curso).strip()]))
+        print(f"[GET CURSOS] Total de cursos únicos: {len(cursos)}")
+        print(f"[GET CURSOS] Cursos: {cursos}")
+        
+        return jsonify(cursos)
+        
+    except requests.exceptions.RequestException as e:
+        print(f"[GET CURSOS] Error de requests: {str(e)}")
+        return jsonify({"error": f"Error al hacer request: {str(e)}"}), 500
+    except Exception as e:
+        print(f"[GET CURSOS] Error general: {str(e)}")
+        return jsonify({"error": f"Error interno: {str(e)}"}), 500
 
 # Endpoint para buscar alumnos en un curso
 @app.route('/api/alumnos', methods=['GET'])
