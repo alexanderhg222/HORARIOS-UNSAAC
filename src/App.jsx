@@ -149,20 +149,20 @@ function App() {
     
     // Debug: mostrar la URL que se está construyendo
     const apiUrl = buildApiUrl(API_ENDPOINTS.carreras);
-    console.log('🔍 URL de la API para carreras:', apiUrl);
+   
     
     fetch(apiUrl)
       .then(res => {
-        console.log('📡 Respuesta del servidor (carreras):', res.status, res.statusText);
+      
         return res.json();
       })
       .then(data => {
-        console.log('📊 Carreras recibidas:', data);
+        
         setCarreras(data);
         setCarrera('');
       })
       .catch(error => {
-        console.error('❌ Error al cargar carreras:', error);
+        
         setCarreras([]);
       })
       .finally(() => setLoading(false));
@@ -179,21 +179,20 @@ function App() {
     
     // Debug: mostrar la URL que se está construyendo
     const apiUrl = buildApiUrl(API_ENDPOINTS.cursos, { link: carrera });
-    console.log('🔍 URL de la API para cursos:', apiUrl);
-    console.log('🔍 Carrera seleccionada:', carrera);
+   
     
     fetch(apiUrl)
       .then(res => {
-        console.log('📡 Respuesta del servidor:', res.status, res.statusText);
+       
         return res.json();
       })
       .then(data => {
-        console.log('📊 Datos recibidos:', data);
+        
         setCursos(data);
         setShowModal(true);
       })
       .catch(error => {
-        console.error('❌ Error al cargar cursos:', error);
+        
         setCursos([]);
       })
       .finally(() => setLoadingCursos(false));
@@ -204,27 +203,6 @@ function App() {
       <div className="w-full max-w-xl bg-white rounded-lg shadow p-8 space-y-6">
         <h1 className="text-2xl font-bold text-center mb-4 text-blue-700">Consulta de alumnos UNSAAC</h1>
         
-        {/* Botón de prueba de conexión */}
-        <button
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition mb-4"
-          onClick={async () => {
-            try {
-              const testUrl = buildApiUrl(API_ENDPOINTS.carreras);
-              console.log('🧪 Probando conexión con:', testUrl);
-              
-              const response = await fetch(testUrl);
-              const data = await response.json();
-              
-              console.log('✅ Conexión exitosa:', data);
-              alert(`✅ Conexión exitosa! Se recibieron ${data.length} carreras`);
-            } catch (error) {
-              console.error('❌ Error de conexión:', error);
-              alert(`❌ Error de conexión: ${error.message}`);
-            }
-          }}
-        >
-          🧪 Probar Conexión con Backend
-        </button>
         
         <div className="flex flex-col gap-4">
           <label className="font-semibold">Seleccione su carrera:</label>
