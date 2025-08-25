@@ -2,6 +2,31 @@ import { useEffect, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { buildApiUrl, API_ENDPOINTS } from './config';
 
+// Componente Loader de pantalla completa
+const FullScreenLoader = ({ message = "Cargando..." }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-2xl p-8 flex flex-col items-center space-y-4">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-blue-400 rounded-full animate-ping"></div>
+        </div>
+        <div className="text-lg font-semibold text-gray-700">{message}</div>
+        <div className="text-sm text-gray-500">Por favor espere...</div>
+      </div>
+    </div>
+  );
+};
+
+// Componente Loader pequeño para elementos específicos
+const SmallLoader = ({ message = "Cargando..." }) => {
+  return (
+    <div className="flex items-center space-x-2 text-blue-600">
+      <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+      <span className="text-sm">{message}</span>
+    </div>
+  );
+};
 
 function App() {
 
@@ -14,6 +39,7 @@ function App() {
   const [loadingCursos, setLoadingCursos] = useState(false);
   const [filtro, setFiltro] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingHorarios, setLoadingHorarios] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [resultados, setResultados] = useState([]);
   const [buscando, setBuscando] = useState(false);
@@ -38,7 +64,7 @@ function App() {
       contenedorTemp.style.left = '-9999px';
       contenedorTemp.style.top = '-9999px';
       contenedorTemp.style.backgroundColor = '#ffffff';
-      contenedorTemp.style.padding = '40px';
+      contenedorTemp.style.padding = '5px';
       contenedorTemp.style.fontFamily = 'Arial, sans-serif';
       contenedorTemp.style.width = '1123px'; // A4 horizontal (297mm = 1123px a 96 DPI)
       contenedorTemp.style.height = '794px';  // A4 horizontal (210mm = 794px a 96 DPI)
@@ -48,20 +74,20 @@ function App() {
       // Agregar título y datos del alumno
       const titulo = document.createElement('h2');
       titulo.textContent = 'Horarios de Cursos';
-      titulo.style.fontSize = '32px';
+      titulo.style.fontSize = '20px';
       titulo.style.fontWeight = 'bold';
       titulo.style.color = '#1e40af';
       titulo.style.textAlign = 'center';
-      titulo.style.marginBottom = '20px';
-      titulo.style.marginTop = '20px';
+      titulo.style.marginBottom = '5px';
+      titulo.style.marginTop = '0px';
       contenedorTemp.appendChild(titulo);
       
       // Agregar datos del alumno
       if (resultados && resultados.length > 0) {
         const datosAlumno = document.createElement('div');
         datosAlumno.style.textAlign = 'center';
-        datosAlumno.style.marginBottom = '30px';
-        datosAlumno.style.fontSize = '18px';
+        datosAlumno.style.marginBottom = '10px';
+        datosAlumno.style.fontSize = '16px';
         datosAlumno.style.color = '#4b5563';
         
         const nombre = document.createElement('div');
@@ -139,7 +165,7 @@ function App() {
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error al generar imagen:', error);
+     
       alert('Error al generar la imagen del horario');
     }
   };
@@ -203,11 +229,10 @@ function App() {
       <div className="w-full max-w-xl bg-white rounded-lg shadow p-8 space-y-6">
         <h1 className="text-2xl font-bold text-center mb-4 text-blue-700">Consulta de alumnos UNSAAC</h1>
         
-        
         <div className="flex flex-col gap-4">
           <label className="font-semibold">Seleccione su carrera:</label>
           {loading ? (
-            <div className="text-blue-500">Cargando carreras...</div>
+            <SmallLoader message="Cargando carreras..." />
           ) : (
             <select
               className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -221,14 +246,27 @@ function App() {
             </select>
           )}
         </div>
+        {/* Loader de pantalla completa para cursos */}
+        {loadingCursos && (
+          <FullScreenLoader message="Cargando cursos de la carrera..." />
+        )}
+        
+        {/* Loader de pantalla completa para búsqueda */}
+        {buscando && (
+          <FullScreenLoader message="Buscando alumnos en todos los cursos..." />
+        )}
+        
+        {/* Loader de pantalla completa para horarios */}
+        {loadingHorarios && (
+          <FullScreenLoader message="Consultando horarios de los cursos..." />
+        )}
+        
         {/* Modal de cursos */}
-        {showModal && (
+        {showModal && !loadingCursos && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative flex flex-col items-center">
               <h2 className="text-lg font-bold mb-4 text-blue-700 text-center">CURSOS DE CARRERA CARGADA</h2>
-              {loadingCursos ? (
-                <div className="text-blue-500">Cargando cursos...</div>
-              ) : cursos.length > 0 ? (
+              {cursos.length > 0 ? (
                 <ul className="list-disc pl-5 max-h-80 overflow-y-auto w-full mb-4">
                   {cursos.map((curso, i) => (
                     <li key={i}>{curso}</li>
@@ -259,7 +297,7 @@ function App() {
           />
         </div>
         <button
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={async () => {
             if (!filtro.trim() || cursos.length === 0) {
               setResultados([]);
@@ -284,16 +322,23 @@ function App() {
             // Reinicia la tabla con los nuevos resultados
             if (resultadosTotales.length > 0) {
               setResultados(resultadosTotales);
-              console.log('Resultados de coincidencias:', resultadosTotales);
+              
             } else {
               setResultados([]);
-              console.log('No se encontraron coincidencias nuevas.');
+              
             }
             setBuscando(false);
           }}
           disabled={loading || buscando}
         >
-          {buscando ? 'Buscando...' : 'Aplicar filtro'}
+          {buscando ? (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Buscando...</span>
+            </div>
+          ) : (
+            'Aplicar filtro'
+          )}
         </button>
         {/* Resultados de búsqueda */}
         {resultados.length > 0 && (
@@ -328,25 +373,36 @@ function App() {
          {/* Botón para consultar horarios de los cursos encontrados */}
         {resultados.length > 0 && (
           <button
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition mb-4"
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={async () => {
               const codigos = [...new Set(resultados.map(r => r.Curso))].join(",");
               if (!carrera || !codigos) {
                 alert("Faltan datos para consultar horarios");
                 return;
               }
+              setLoadingHorarios(true);
               try {
                 const res = await fetch(buildApiUrl(API_ENDPOINTS.horarios, { link: carrera, codigos }));
                 const data = await res.json();
                 setHorarios(data);
                 setShowHorarioModal(true);
-                console.log("Horarios encontrados:", data);
+          
               } catch (e) {
                 alert("Error al consultar horarios");
+              } finally {
+                setLoadingHorarios(false);
               }
             }}
+            disabled={loadingHorarios}
           >
-            Consultar horarios de los cursos encontrados
+            {loadingHorarios ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Consultando horarios...</span>
+              </div>
+            ) : (
+              'Consultar horarios de los cursos encontrados'
+            )}
           </button>
         )}
         {/* Modal de horarios tipo calendario */}

@@ -13,9 +13,7 @@ export const API_ENDPOINTS = {
 export const buildApiUrl = (endpoint, params = {}) => {
   try {
     // Debug: mostrar la URL base
-    console.log('🔧 API_BASE_URL:', API_BASE_URL);
-    console.log('🔧 Endpoint:', endpoint);
-    console.log('🔧 Params:', params);
+    
     
     const url = new URL(API_BASE_URL + endpoint);
     
@@ -27,11 +25,11 @@ export const buildApiUrl = (endpoint, params = {}) => {
     });
     
     const finalUrl = url.toString();
-    console.log('🔧 URL final construida:', finalUrl);
+    
     
     return finalUrl;
   } catch (error) {
-    console.error('❌ Error construyendo URL:', error);
+   
     // Fallback: construir URL simple
     const baseUrl = API_BASE_URL + endpoint;
     if (Object.keys(params).length === 0) {
