@@ -9,6 +9,11 @@ from io import StringIO
 app = Flask(__name__)
 CORS(app)
 
+# Health check simple que no depende de servicios externos
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 # Endpoint para obtener carreras
 @app.route('/api/carreras', methods=['GET'])
 def get_carreras():
