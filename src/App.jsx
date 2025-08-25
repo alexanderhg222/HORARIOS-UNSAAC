@@ -3,15 +3,32 @@ import html2canvas from 'html2canvas';
 import { buildApiUrl, API_ENDPOINTS } from './config';
 
 // Componente Loader de pantalla completa
-const FullScreenLoader = ({ message = "Cargando..." }) => {
+const FullScreenLoader = ({ message = "Cargando...", progress = null }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-8 flex flex-col items-center space-y-4">
+      <div className="bg-white rounded-xl shadow-2xl p-8 flex flex-col items-center space-y-4 min-w-80">
         <div className="relative">
           <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
           <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-blue-400 rounded-full animate-ping"></div>
         </div>
-        <div className="text-lg font-semibold text-gray-700">{message}</div>
+        <div className="text-lg font-semibold text-gray-700 text-center">{message}</div>
+        
+        {/* Barra de progreso */}
+        {progress !== null && (
+          <div className="w-full space-y-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Progreso</span>
+              <span className="font-semibold">{Math.round(progress)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+        
         <div className="text-sm text-gray-500">Por favor espere...</div>
       </div>
     </div>
@@ -40,6 +57,8 @@ function App() {
   const [filtro, setFiltro] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingHorarios, setLoadingHorarios] = useState(false);
+  const [progresoHorarios, setProgresoHorarios] = useState(0);
+  const [progresoBusqueda, setProgresoBusqueda] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [resultados, setResultados] = useState([]);
   const [buscando, setBuscando] = useState(false);
@@ -227,7 +246,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10">
       <div className="w-full max-w-xl bg-white rounded-lg shadow p-8 space-y-6">
-        <h1 className="text-2xl font-bold text-center mb-4 text-blue-700">Consulta de alumnos UNSAAC</h1>
+        <h1 className="text-2xl font-bold text-center mb-4 text-blue-700">Consulta de Horarios - Alumnos UNSAAC</h1>
         
         <div className="flex flex-col gap-4">
           <label className="font-semibold">Seleccione su carrera:</label>
@@ -253,12 +272,18 @@ function App() {
         
         {/* Loader de pantalla completa para búsqueda */}
         {buscando && (
-          <FullScreenLoader message="Buscando alumnos en todos los cursos..." />
+          <FullScreenLoader 
+            message="Buscando alumnos en todos los cursos..." 
+            progress={progresoBusqueda}
+          />
         )}
         
         {/* Loader de pantalla completa para horarios */}
         {loadingHorarios && (
-          <FullScreenLoader message="Consultando horarios de los cursos..." />
+          <FullScreenLoader 
+            message="Consultando horarios de los cursos..." 
+            progress={progresoHorarios}
+          />
         )}
         
         {/* Modal de cursos */}
@@ -285,9 +310,23 @@ function App() {
             </div>
           </div>
         )}
+        
+        {/* Label de cursos cargados */}
+        {!showModal && cursos.length > 0 && !loadingCursos && (
+          <div className="w-full bg-green-100 border-2 border-green-500 rounded-lg p-3 text-center">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+              <span className="text-green-800 font-bold text-lg">✓ CURSOS CARGADOS</span>
+              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+            </div>
+            <div className="text-green-700 text-sm mt-1">
+              {cursos.length} curso{cursos.length !== 1 ? 's' : ''} disponible{cursos.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        )}
         <div className="flex flex-col gap-4">
-          <label className="font-semibold">Filtrar alumno/nombre:</label>
-          <label className="font-semibold">Ejm:HUAMAN-PEREZ-ANASTACIO</label>
+          <label className="font-semibold text-center text-blue-700">BUSCAR: CODIGO-NOMBRES:</label>
+          <label className="font-semibold">Ejm:   149657 // HUAMAN-PEREZ-ANASTACIO</label>
           <input
             className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             type="text"
@@ -298,15 +337,22 @@ function App() {
         </div>
         <button
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={async () => {
+                    onClick={async () => {
             if (!filtro.trim() || cursos.length === 0) {
               setResultados([]);
               return;
             }
             setBuscando(true);
+            setProgresoBusqueda(0);
             let resultadosTotales = [];
-            for (let curso of cursos) {
+            
+            for (let i = 0; i < cursos.length; i++) {
+              const curso = cursos[i];
               try {
+                // Actualizar progreso basado en el curso actual
+                const progreso = ((i + 1) / cursos.length) * 100;
+                setProgresoBusqueda(progreso);
+                
                 const res = await fetch(buildApiUrl(API_ENDPOINTS.alumnos, { curso, filtro }));
                 const data = await res.json();
              
@@ -316,18 +362,20 @@ function App() {
                   resultadosTotales = resultadosTotales.concat(dataConCurso);
                 }
               } catch (e) {
-                
+                console.error(`Error consultando curso ${curso}:`, e);
               }
             }
+            
             // Reinicia la tabla con los nuevos resultados
             if (resultadosTotales.length > 0) {
               setResultados(resultadosTotales);
-              
+             
             } else {
               setResultados([]);
-              
+             
             }
             setBuscando(false);
+            setProgresoBusqueda(0);
           }}
           disabled={loading || buscando}
         >
@@ -374,23 +422,52 @@ function App() {
         {resultados.length > 0 && (
           <button
             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={async () => {
+                        onClick={async () => {
               const codigos = [...new Set(resultados.map(r => r.Curso))].join(",");
               if (!carrera || !codigos) {
                 alert("Faltan datos para consultar horarios");
                 return;
               }
+              
               setLoadingHorarios(true);
+              setProgresoHorarios(0);
+              
               try {
+                // Simular progreso de la consulta
+                const totalSteps = 4; // Pasos de la consulta
+                let currentStep = 0;
+                
+                // Paso 1: Iniciando consulta
+                currentStep++;
+                setProgresoHorarios((currentStep / totalSteps) * 100);
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Paso 2: Conectando con la API
+                currentStep++;
+                setProgresoHorarios((currentStep / totalSteps) * 100);
+                await new Promise(resolve => setTimeout(resolve, 400));
+                
+                // Paso 3: Procesando datos
+                currentStep++;
+                setProgresoHorarios((currentStep / totalSteps) * 100);
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
                 const res = await fetch(buildApiUrl(API_ENDPOINTS.horarios, { link: carrera, codigos }));
                 const data = await res.json();
+                
+                // Paso 4: Completado
+                currentStep++;
+                setProgresoHorarios((currentStep / totalSteps) * 100);
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
                 setHorarios(data);
                 setShowHorarioModal(true);
-          
+           
               } catch (e) {
                 alert("Error al consultar horarios");
               } finally {
                 setLoadingHorarios(false);
+                setProgresoHorarios(0);
               }
             }}
             disabled={loadingHorarios}
