@@ -326,7 +326,7 @@ function App() {
         )}
         <div className="flex flex-col gap-4">
           <label className="font-semibold text-center text-blue-700">BUSCAR: CODIGO-NOMBRES:</label>
-          <label className="font-semibold">Ejm:   149657 <span className='text-green-800 font-bold'>/ O PUEDES PONER/ </span>  HUAMAN-PEREZ-ANASTACIO</label>
+          <label className="font-semibold">Ejm:   149657 <span className='text-green-100 font-bold'>/ O PUEDES PONER/ </span>  HUAMAN-PEREZ-ANASTACIO</label>
           <input
             className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             type="text"
